@@ -1,80 +1,90 @@
-import cv2
 import numpy as np
-from parameter.color_matching_function import color_matching_function
-from glob import glob
-import os
+import cv2
 import datetime
+import os
+import glob
+import sys
 
+# フォルダが存在しない場合、新規作成
 def make_folder(folder_name):
     if not os.path.exists(folder_name):
         os.makedirs(folder_name)
 
-def load_hsi(file_name):
-    hsi = np.fromfile(file_name, np.uint16, -1).reshape(1080, 151, 2048)
-    hsi = np.transpose(hsi, (0, 2, 1))
-    return hsi
+# ハイパースペクトルデータを読み込み、画像データを生成
+def hyprawread(file_path, width, height, spectral_dim):
+    with open(file_path, 'rb') as file:
+        img_data = np.fromfile(file, np.uint16)
+    img_data = np.reshape(img_data, (height, spectral_dim, width))
+    img_data = np.transpose(img_data, (0, 2, 1))
+    return img_data
 
-def hsi_to_rgb(hsi, color_matching_function, lower_limit_wavelength=390, upper_limit_wavelength=830, spectrum_stepsize=5, gamma=2.2):
-    hsi = hsi.astype(np.float32)
-    height, width, bands = hsi.shape
-    hsi = hsi / 65535.0
+# ハイパースペクトルデータからRGB画像を抽出
+def extract_rgb(img_data):
+    red_band = np.mean(img_data[:, :, 58:87], axis=2)
+    green_band = np.mean(img_data[:, :, 29:41], axis=2)
+    blue_band = np.mean(img_data[:, :, 16:29], axis=2)
+    
+    red_band = 255 * red_band / np.max(red_band)
+    green_band = 255 * green_band / np.max(green_band)
+    blue_band = 255 * blue_band / np.max(blue_band)
+    
+    rgb_image = np.dstack((red_band, green_band, blue_band)).astype(np.uint8)
+    rgb_image = cv2.cvtColor(rgb_image, cv2.COLOR_RGB2BGR)
+    return rgb_image
 
-    wave_length = np.arange(lower_limit_wavelength, upper_limit_wavelength + 1, spectrum_stepsize)
-    cmf = color_matching_function()
-    index_low = np.where(wave_length == cmf[0, 0])[0][0]
-    index_high = np.where(wave_length == cmf[-1, 0])[0][0] + 1
+# ガンマ補正を適用する関数
+def apply_gamma_correction(image, gamma):
+    inv_gamma = 1.0 / gamma
+    table = np.array([((i / 255.0) ** inv_gamma) * 255 for i in np.arange(256)]).astype("uint8")
+    return cv2.LUT(image, table)
 
-    hsi_cie_range = hsi[:, :, index_low:index_high]
+# ハイパースペクトルデータから赤外線画像を抽出
+def extract_infrared(img_data):
+    infrared_band = np.mean(img_data[:, :, 71:], axis=2)
+    infrared_band = 255 * infrared_band / np.max(infrared_band)
+    infrared_stack = np.dstack((infrared_band, infrared_band, infrared_band)).astype(np.uint8)
+    return infrared_band, infrared_stack
 
-    img_xyz = np.zeros((height, width, 3))
+# ハイパースペクトルデータからUV画像を抽出
+def extract_uv(img_data):
+    uv_band = np.mean(img_data[:, :, :10], axis=2)
+    uv_band = 255 * uv_band / np.max(uv_band)
+    uv_stack = np.dstack((uv_band, uv_band, uv_band)).astype(np.uint8)
+    return uv_band, uv_stack
 
-    intensity = hsi_cie_range.reshape(-1, index_high - index_low)
-    xyz = np.dot(intensity, cmf[:, 1:])
+# ハイパースペクトルデータからRGBと赤外線を組み合わせた画像を生成
+def create_rgb_nir_image(img_data):
+    rgb_image = extract_rgb(img_data)
+    infrared_band, _ = extract_infrared(img_data)
+    rgb_nir_image = np.dstack((rgb_image, infrared_band)).astype(np.uint8)
+    return rgb_nir_image
 
-    img_xyz = xyz.reshape(height, width, 3)
+# ハイパースペクトル画像を処理し、指定されたディレクトリに保存
+def process_hyperspectral_images(input_dir, output_dir, width, height, spectral_dim, gamma):
+    files = glob.glob(os.path.join(input_dir, "*.nh9"))
+    for file_path in files:
+        img_data = hyprawread(file_path, width, height, spectral_dim)
+        rgb_nir_image = create_rgb_nir_image(img_data)
+        
+        # ガンマ補正の適用
+        corrected_image = apply_gamma_correction(rgb_nir_image, gamma)
+        
+        timestamp = datetime.datetime.now().strftime('%m%d%Y_%H%M%S')
+        output_path = os.path.join(output_dir, f"rgbNIR_{timestamp}.jpg")
+        cv2.imwrite(output_path, corrected_image)
+        print(f"Image saved: {output_path}")
 
-    # XYZ値を正規化
-    img_xyz = img_xyz / np.max(img_xyz)
+if __name__ == "__main__":
+    current_date = datetime.datetime.now().strftime("%Y-%m-%d")
+    if len(sys.argv) > 1:
+        input_directory = sys.argv[1]
+    else:
+        print("Please provide the input directory path.")
+        sys.exit()
+    
+    output_directory = f"rgb-{current_date}"
+    make_folder(output_directory)
+    width, height, spectral_dim = 2048, 1080, 151
+    gamma_value = 2.2 # ガンマ補正の値
 
-   # XYZからRGBへの変換行列
-    transformation_matrix = np.array([[3.2406, -1.5372, -0.4986],
-                                      [-0.9689,  1.8758,  0.0415],
-                                      [0.0557, -0.2040,  1.0570]])
-
-    # 行列の乗算を使用して変換を行う
-    img_rgb = np.dot(img_xyz, transformation_matrix.T)
-
-    # ガンマ補正を適用
-    if gamma is not None:
-        img_rgb = gamma_correction(img_rgb, gamma=gamma)
-
-    # 値を [0, 1] の範囲にクリップ
-    img_rgb = np.clip(img_rgb, 0, 1)
-    # 8ビット整数に変換
-    img_rgb = (img_rgb * 255).astype(np.uint8)
-
-    return img_rgb
-
-def gamma_correction(img, gamma=2.2):
-    img = np.power(img, 1.0 / gamma)
-    return img
-
-def show_image(image):
-    cv2.imshow('image', image)
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
-
-def main():
-    date = datetime.datetime.now().strftime("%Y-%m-%d")
-    folder_name = "rgb-" + date
-    make_folder(folder_name)
-    hsi_datas = glob("*.nh9")
-
-    for hsi_data in hsi_datas:
-        hsi = load_hsi(hsi_data)
-        rgb = hsi_to_rgb(hsi, color_matching_function)
-        cv2.imwrite(folder_name + "/" + hsi_data + ".png", rgb)
-        # show_image(rgb) 
-
-if __name__ == '__main__':
-    main()
+    process_hyperspectral_images(input_directory, output_directory, width, height, spectral_dim, gamma_value)
