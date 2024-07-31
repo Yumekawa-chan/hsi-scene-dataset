@@ -9,7 +9,11 @@
 HSIデータをRGB画像として可視化します．
 
 - HSIファイルを読み込み，RGB画像に変換します．
-- 変換されたRGB画像を表示します．
+- 変換されたRGB画像を本日の日付のフォルダーに保存します．
+
+### 使用方法
+
+`python hs_to_rgb.py [path-to-nh9-files]`
 
 ### folder_monitor
 
@@ -23,10 +27,3 @@ HSIデータをRGB画像として可視化します．
 1. `folder_monitor.py` を実行します．
 2. `hs_data` フォルダ内に新しいHSIファイルを追加します．
 3. ファイル名に基づいて自動的に情報を抽出し，ユーザーから追加情報を取得して `data.json` に保存します．
-
-## インストールと設定
-
-1. リポジトリをクローンします:
-   ```sh
-   git clone https://github.com/Yumekawa-chan/hsi-scene-dataset.git
-   cd hsi-scene-dataset
