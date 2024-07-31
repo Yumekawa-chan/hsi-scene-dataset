@@ -1,6 +1,13 @@
 import cv2
 import numpy as np
 from parameter.color_matching_function import color_matching_function
+from glob import glob
+import os
+import datetime
+
+def make_folder(folder_name):
+    if not os.path.exists(folder_name):
+        os.makedirs(folder_name)
 
 def load_hsi(file_name):
     hsi = np.fromfile(file_name, np.uint16, -1).reshape(1080, 151, 2048)
@@ -58,9 +65,16 @@ def show_image(image):
     cv2.destroyAllWindows()
 
 def main():
-    hsi = load_hsi('outdoor_manual_image.nh9')
-    rgb = hsi_to_rgb(hsi, color_matching_function)
-    show_image(rgb)
+    date = datetime.datetime.now().strftime("%Y-%m-%d")
+    folder_name = "rgb-" + date
+    make_folder(folder_name)
+    hsi_datas = glob("*.nh9")
+
+    for hsi_data in hsi_datas:
+        hsi = load_hsi(hsi_data)
+        rgb = hsi_to_rgb(hsi, color_matching_function)
+        cv2.imwrite(folder_name + "/" + hsi_data + ".png", rgb)
+        # show_image(rgb) 
 
 if __name__ == '__main__':
     main()
