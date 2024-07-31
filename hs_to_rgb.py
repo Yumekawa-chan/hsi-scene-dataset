@@ -69,8 +69,10 @@ def process_hyperspectral_images(input_dir, output_dir, width, height, spectral_
         # ガンマ補正の適用
         corrected_image = apply_gamma_correction(rgb_nir_image, gamma)
         
-        timestamp = datetime.datetime.now().strftime('%m%d%Y_%H%M%S')
-        output_path = os.path.join(output_dir, f"rgbNIR_{timestamp}.jpg")
+        base_name = os.path.basename(file_path)
+        output_name = f"rgb-{os.path.splitext(base_name)[0]}.jpg"
+        output_path = os.path.join(output_dir, output_name)
+        
         cv2.imwrite(output_path, corrected_image)
         print(f"Image saved: {output_path}")
 
