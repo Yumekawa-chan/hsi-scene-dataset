@@ -29,11 +29,13 @@ def hsi_to_rgb(hsi, color_matching_function, lower_limit_wavelength=390, upper_l
     # XYZ値を正規化
     img_xyz = img_xyz / np.max(img_xyz)
 
-    # XYZからRGBに変換
-    img_rgb = np.zeros_like(img_xyz)
-    img_rgb[:, :, 0] = 3.2406 * img_xyz[:, :, 0] - 1.5372 * img_xyz[:, :, 1] - 0.4986 * img_xyz[:, :, 2]
-    img_rgb[:, :, 1] = -0.9689 * img_xyz[:, :, 0] + 1.8758 * img_xyz[:, :, 1] + 0.0415 * img_xyz[:, :, 2]
-    img_rgb[:, :, 2] = 0.0557 * img_xyz[:, :, 0] - 0.2040 * img_xyz[:, :, 1] + 1.0570 * img_xyz[:, :, 2]
+   # XYZからRGBへの変換行列
+    transformation_matrix = np.array([[3.2406, -1.5372, -0.4986],
+                                      [-0.9689,  1.8758,  0.0415],
+                                      [0.0557, -0.2040,  1.0570]])
+
+    # 行列の乗算を使用して変換を行う
+    img_rgb = np.dot(img_xyz, transformation_matrix.T)
 
     # ガンマ補正を適用
     if gamma is not None:
