@@ -24,6 +24,6 @@ HSIデータをRGB画像として可視化します．
 
 #### 使用方法
 
-1. `folder_monitor.py` を実行します．
-2. `hs_data` フォルダ内に新しいHSIファイルを追加します．
+1. `folder_monitor.py [path-to-target-folder]` を実行します．
+2. `[path-to-target-folder]` フォルダ内に新しいHSIファイルを追加します．
 3. ファイル名に基づいて自動的に情報を抽出し，ユーザーから追加情報を取得して `data.json` に保存します．

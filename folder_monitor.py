@@ -5,12 +5,13 @@ import re
 import shutil
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
+import sys
 
 # JSONファイルのパス
 json_file_path = 'data.json'
 
 # 監視するフォルダのパス
-path = "hs_data"
+path = sys.argv[1]
 dark_path = os.path.join(path, "dark")
 
 # JSONファイルが存在しない場合は空のリストで初期化
