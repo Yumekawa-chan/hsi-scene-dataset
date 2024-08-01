@@ -20,9 +20,12 @@ def hyprawread(file_path, width, height, spectral_dim):
 
 # ハイパースペクトルデータからRGB画像を抽出
 def extract_rgb(img_data):
-    red_band = np.mean(img_data[:, :, 58:87], axis=2)
-    green_band = np.mean(img_data[:, :, 29:41], axis=2)
-    blue_band = np.mean(img_data[:, :, 16:29], axis=2)
+    # original 58:87
+    red_band = np.mean(img_data[:, :, 54:70], axis=2)
+    # original29:41
+    green_band = np.mean(img_data[:, :, 30:40], axis=2)
+    # original16:29
+    blue_band = np.mean(img_data[:, :, 20:30], axis=2)
     
     red_band = 255 * red_band / np.max(red_band)
     green_band = 255 * green_band / np.max(green_band)
