@@ -15,15 +15,17 @@ HSIデータをRGB画像として可視化します．
 
 `python hs_to_rgb.py [path-to-nh9-files]`
 
-### folder_monitor
+### annotation
 
-指定されたフォルダを監視し，新しいHSIファイルが追加された際に自動的に処理します．
+HSIデータのアノテーションを行います．撮影ファイルに対応するJSONデータを作成し，保存します．
 
-- 新しいファイルが追加された際に，ファイル名から情報を抽出し，ユーザーから追加情報を取得してJSONファイルに保存します．
-- ファイル名が "Dark" で始まる場合はJSON入力をスキップします．
+- ファイル名から時刻，カラーチェッカーの有無，カメラパラメータを抽出します．
+- アノテーション結果をdata.jsonに保存します．既存のデータは保持され，新しいデータが追加されます．
+
 
 #### 使用方法
 
-1. `folder_monitor.py [path-to-target-folder]` を実行します．
-2. `[path-to-target-folder]` フォルダ内に新しいHSIファイルを追加します．
-3. ファイル名に基づいて自動的に情報を抽出し，ユーザーから追加情報を取得して `data.json` に保存します．
+`python annotation.py <directory> <weather>`
+
+- <directory>：データが保存されている日付フォルダーのパス
+- <weather>：撮影時の天候 (sunny, cloud, rain, snow のいずれか)
