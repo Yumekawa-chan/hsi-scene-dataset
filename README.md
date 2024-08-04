@@ -27,5 +27,5 @@ HSIデータのアノテーションを行います．撮影ファイルに対�
 
 `python annotation.py <directory> <weather>`
 
-- <directory>：データが保存されている日付フォルダーのパス
-- <weather>：撮影時の天候 (sunny, cloud, rain, snow のいずれか)
+- directory：データが保存されている日付フォルダーのパス
+- weather：撮影時の天候 (sunny, cloud, rain, snow のいずれか)
