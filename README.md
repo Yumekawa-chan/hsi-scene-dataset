@@ -13,7 +13,7 @@ HSIデータをRGB画像として可視化します．
 
 ### 使用方法
 
-`python hs_to_rgb.py [path-to-nh9-files]`
+`python hs_to_rgb.py [path-to-日付（例：08292024）]`
 
 ### annotation
 

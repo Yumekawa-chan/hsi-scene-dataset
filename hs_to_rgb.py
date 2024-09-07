@@ -1,9 +1,9 @@
-import numpy as np
-import cv2
-import datetime
 import os
 import glob
+import datetime
 import sys
+import cv2
+import numpy as np
 
 # フォルダが存在しない場合、新規作成
 def make_folder(folder_name):
@@ -20,17 +20,14 @@ def hyprawread(file_path, width, height, spectral_dim):
 
 # ハイパースペクトルデータからRGB画像を抽出
 def extract_rgb(img_data):
-    # original 58:87
     red_band = np.mean(img_data[:, :, 54:70], axis=2)
-    # original29:41
     green_band = np.mean(img_data[:, :, 30:40], axis=2)
-    # original16:29
     blue_band = np.mean(img_data[:, :, 20:30], axis=2)
-    
+
     red_band = 255 * red_band / np.max(red_band)
     green_band = 255 * green_band / np.max(green_band)
     blue_band = 255 * blue_band / np.max(blue_band)
-    
+
     rgb_image = np.dstack((red_band, green_band, blue_band)).astype(np.uint8)
     rgb_image = cv2.cvtColor(rgb_image, cv2.COLOR_RGB2BGR)
     return rgb_image
@@ -48,13 +45,6 @@ def extract_infrared(img_data):
     infrared_stack = np.dstack((infrared_band, infrared_band, infrared_band)).astype(np.uint8)
     return infrared_band, infrared_stack
 
-# ハイパースペクトルデータからUV画像を抽出
-def extract_uv(img_data):
-    uv_band = np.mean(img_data[:, :, :10], axis=2)
-    uv_band = 255 * uv_band / np.max(uv_band)
-    uv_stack = np.dstack((uv_band, uv_band, uv_band)).astype(np.uint8)
-    return uv_band, uv_stack
-
 # ハイパースペクトルデータからRGBと赤外線を組み合わせた画像を生成
 def create_rgb_nir_image(img_data):
     rgb_image = extract_rgb(img_data)
@@ -68,28 +58,42 @@ def process_hyperspectral_images(input_dir, output_dir, width, height, spectral_
     for file_path in files:
         img_data = hyprawread(file_path, width, height, spectral_dim)
         rgb_nir_image = create_rgb_nir_image(img_data)
-        
+
         # ガンマ補正の適用
         corrected_image = apply_gamma_correction(rgb_nir_image, gamma)
-        
+
         base_name = os.path.basename(file_path)
         output_name = f"rgb-{os.path.splitext(base_name)[0]}.jpg"
         output_path = os.path.join(output_dir, output_name)
-        
+
         cv2.imwrite(output_path, corrected_image)
         print(f"Image saved: {output_path}")
+
+# 指定されたフォルダー内のすべてのサブフォルダーを処理する関数
+def process_hyperspectral_images_in_all_subdirs(parent_dir, output_dir, width, height, spectral_dim, gamma):
+    # 親フォルダ内のすべてのサブフォルダをリスト化
+    subdirs = [os.path.join(parent_dir, d) for d in os.listdir(parent_dir) if os.path.isdir(os.path.join(parent_dir, d))]
+    
+    for subdir in subdirs:
+        print(f"Processing folder: {subdir}")
+        
+        # サブフォルダごとの処理を行い、結果を指定された出力フォルダに保存
+        process_hyperspectral_images(subdir, output_dir, width, height, spectral_dim, gamma)
 
 if __name__ == "__main__":
     current_date = datetime.datetime.now().strftime("%Y-%m-%d")
     if len(sys.argv) > 1:
-        input_directory = sys.argv[1]
+        parent_directory = sys.argv[1]
     else:
-        print("Please provide the input directory path.")
+        print("Please provide the parent directory path.")
         sys.exit()
-    
-    output_directory = f"rgb-{current_date}"
-    make_folder(output_directory)
-    width, height, spectral_dim = 2048, 1080, 151
-    gamma_value = 2.2 # ガンマ補正の値
 
-    process_hyperspectral_images(input_directory, output_directory, width, height, spectral_dim, gamma_value)
+    # カレントディレクトリに日付付きフォルダを作成
+    output_directory = os.path.join(os.getcwd(), f"rgb-{current_date}")
+    make_folder(output_directory)
+
+    width, height, spectral_dim = 2048, 1080, 151
+    gamma_value = 2.2
+
+    # 指定された親フォルダ内のすべてのサブフォルダを処理
+    process_hyperspectral_images_in_all_subdirs(parent_directory, output_directory, width, height, spectral_dim, gamma_value)
